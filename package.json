@@ -1,6 +1,6 @@
 {
   "name": "stremio-shared-debrid",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Shared user notifier for Stremio",
   "author": "Anh Nguyen <anhkind@gmail.com>",
   "main": "server.js",
