@@ -6,13 +6,13 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev":  "node src/server.js -- --launch",
+    "dev": "node src/server.js -- --launch",
     "test": "jest",
     "test:watch": "jest --watch"
   },
   "repository": {
     "type": "git",
-    "url":  "https://github.com/anhkind/stremio-aaa"
+    "url": "https://github.com/anhkind/stremio-shared-debrid"
   },
   "keywords": [
     "stremio",
@@ -20,7 +20,7 @@
     "addons"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/anhkind/stremio-aaa",
+  "homepage": "https://github.com/anhkind/stremio-shared-debrid",
   "dependencies": {
     "@octokit/core": "^7.0.6",
     "magnet-uri": "^5.1.3",
