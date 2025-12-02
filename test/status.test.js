@@ -14,29 +14,32 @@ jest.mock('@octokit/core', () => ({
 describe('Status Class', () => {
   const mockToken = 'test-token';
   const mockId = 'test-gist-id';
+  const mockUsername = 'test-user';
   const mockFileName = 'shared-debrid.json';
   let status;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    status = new Status(mockToken, mockId, mockFileName);
+    status = new Status(mockToken, mockId, mockUsername, mockFileName);
   });
 
   describe('Constructor', () => {
-    it('should initialize with Gist instance and fileName', () => {
+    it('should initialize with Gist instance, fileName, and username', () => {
       expect(status.gist).toBeDefined();
       expect(status.fileName).toBe(mockFileName);
+      expect(status.data.username).toBe(mockUsername);
+      expect(status.data.accessedAt).toBe(new Date('1970-01-01').toISOString());
       expect(Gist).toHaveBeenCalledWith(mockToken, mockId);
     });
 
     it('should use default fileName when not provided', () => {
-      const statusWithoutFileName = new Status(mockToken, mockId);
+      const statusWithoutFileName = new Status(mockToken, mockId, mockUsername);
       expect(statusWithoutFileName.fileName).toBe('shared-debrid.json');
     });
 
     it('should use custom fileName when provided', () => {
       const customFileName = 'custom-config.json';
-      const statusWithCustomFileName = new Status(mockToken, mockId, customFileName);
+      const statusWithCustomFileName = new Status(mockToken, mockId, mockUsername, customFileName);
       expect(statusWithCustomFileName.fileName).toBe(customFileName);
     });
   });
@@ -60,7 +63,10 @@ describe('Status Class', () => {
       const result = await status.get();
 
       expect(status.gist.getContent).toHaveBeenCalledWith(mockFileName);
-      expect(result).toEqual({});
+      expect(result).toEqual({
+        accessedAt: new Date('1970-01-01').toISOString(),
+        username: mockUsername
+      });
     });
 
     it('should use constructor fileName when no fileName parameter provided', async () => {
@@ -72,13 +78,14 @@ describe('Status Class', () => {
       expect(status.gist.getContent).toHaveBeenCalledWith(mockFileName);
     });
 
-    it('should use constructor fileName when get is called with fileName parameter', async () => {
+    it('should always use constructor fileName since get() has no fileName parameter', async () => {
       const customFileName = 'custom-file.json';
       const mockJsonData = { status: 'active' };
       status.gist.getContent = jest.fn().mockResolvedValue(JSON.stringify(mockJsonData));
 
       await status.get(customFileName);
 
+      // get() method ignores the fileName parameter and uses this.fileName
       expect(status.gist.getContent).toHaveBeenCalledWith(mockFileName);
     });
 
@@ -87,7 +94,7 @@ describe('Status Class', () => {
       status.gist.getContent = jest.fn().mockResolvedValue(invalidJson);
 
       await expect(status.get())
-        .rejects.toThrow(`Failed to parse JSON content from ${mockFileName}`);
+        .rejects.toThrow('Failed to get status:');
     });
 
     it('should throw error when Gist getContent fails', async () => {
@@ -142,10 +149,6 @@ describe('Status Class', () => {
       expect(result).toEqual({ updated: true });
     });
 
-    it('should throw error when update is called before get', async () => {
-      await expect(status.update()).rejects.toThrow('No data available to update. Call get() first.');
-    });
-
     it('should throw error when Gist updateContent fails', async () => {
       const mockData = { status: 'updated' };
       const errorMessage = 'Update failed';
@@ -167,11 +170,17 @@ describe('Status Class', () => {
       // Call get with empty content
       await status.get();
 
-      // Update should work with empty object
+      // Update should work with default data structure
       const result = await status.update();
 
-      expect(status.data).toEqual({});
-      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, JSON.stringify({}, null, 2));
+      expect(status.data).toEqual({
+        accessedAt: new Date('1970-01-01').toISOString(),
+        username: mockUsername
+      });
+      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, JSON.stringify({
+        accessedAt: new Date('1970-01-01').toISOString(),
+        username: mockUsername
+      }, null, 2));
       expect(result).toEqual({ updated: true });
     });
   });
