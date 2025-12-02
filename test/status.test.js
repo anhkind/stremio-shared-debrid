@@ -123,55 +123,56 @@ describe('Status Class', () => {
   });
 
   describe('update method', () => {
-    it('should update gist with stringified JSON content when object is provided', async () => {
-      const mockContent = { status: 'updated', timestamp: '2023-01-02' };
-      const expectedString = JSON.stringify(mockContent, null, 2);
+    it('should update gist with stored data after get call', async () => {
+      const mockData = { status: 'active', timestamp: '2023-01-02' };
+      const expectedString = JSON.stringify(mockData, null, 2);
 
+      // Mock get to return data and store it in this.data
+      status.gist.getContent = jest.fn().mockResolvedValue(JSON.stringify(mockData));
       status.gist.updateContent = jest.fn().mockResolvedValue({ updated: true });
 
-      const result = await status.update(mockContent);
+      // First call get to populate this.data
+      await status.get();
 
+      // Then call update to use this.data
+      const result = await status.update();
+
+      expect(status.data).toEqual(mockData);
       expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, expectedString);
       expect(result).toEqual({ updated: true });
     });
 
-    it('should update gist with simple object', async () => {
-      const mockContent = { message: 'hello world' };
-      const expectedString = JSON.stringify(mockContent, null, 2);
-
-      status.gist.updateContent = jest.fn().mockResolvedValue({ updated: true });
-
-      const result = await status.update(mockContent);
-
-      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, expectedString);
-      expect(result).toEqual({ updated: true });
-    });
-
-    it('should always use constructor fileName from update method', async () => {
-      const mockContent = { status: 'updated' };
-      status.gist.updateContent = jest.fn().mockResolvedValue({ updated: true });
-
-      await status.update(mockContent);
-
-      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, JSON.stringify(mockContent, null, 2));
+    it('should throw error when update is called before get', async () => {
+      await expect(status.update()).rejects.toThrow('No data available to update. Call get() first.');
     });
 
     it('should throw error when Gist updateContent fails', async () => {
+      const mockData = { status: 'updated' };
       const errorMessage = 'Update failed';
-      const mockContent = { status: 'updated' };
 
+      status.gist.getContent = jest.fn().mockResolvedValue(JSON.stringify(mockData));
       status.gist.updateContent = jest.fn().mockRejectedValue(new Error(errorMessage));
 
-      await expect(status.update(mockContent))
+      // First call get to populate this.data
+      await status.get();
+
+      await expect(status.update())
         .rejects.toThrow('Failed to update status: Update failed');
     });
 
-    it('should throw error when data is not an object', async () => {
-      await expect(status.update('string')).rejects.toThrow('Gist data should be an object');
-      await expect(status.update(123)).rejects.toThrow('Gist data should be an object');
-      // Note: null passes typeof === 'object' check in JavaScript, so it won't throw here
-      await expect(status.update(undefined)).rejects.toThrow('Gist data should be an object');
-      await expect(status.update(true)).rejects.toThrow('Gist data should be an object');
+    it('should work with empty data from get', async () => {
+      status.gist.getContent = jest.fn().mockResolvedValue(''); // Empty content
+      status.gist.updateContent = jest.fn().mockResolvedValue({ updated: true });
+
+      // Call get with empty content
+      await status.get();
+
+      // Update should work with empty object
+      const result = await status.update();
+
+      expect(status.data).toEqual({});
+      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, JSON.stringify({}, null, 2));
+      expect(result).toEqual({ updated: true });
     });
   });
 });
