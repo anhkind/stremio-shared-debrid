@@ -150,4 +150,76 @@ describe('Gist Class', () => {
       await expect(gist.update(files)).rejects.toThrow(errorMessage);
     });
   });
+
+  describe('getContent method', () => {
+    it('should return content of a specific file from the gist', async () => {
+      const mockGistData = {
+        id: mockId,
+        files: {
+          'test.txt': { content: 'test content' },
+          'config.json': { content: '{"key": "value"}' }
+        }
+      };
+
+      jest.spyOn(gist, 'get').mockResolvedValue(mockGistData);
+
+      const result = await gist.getContent('test.txt');
+
+      expect(gist.get).toHaveBeenCalled();
+      expect(result).toBe('test content');
+    });
+
+    it('should handle different file types correctly', async () => {
+      const mockGistData = {
+        id: mockId,
+        files: {
+          'script.js': { content: 'console.log("hello");' },
+          'data.json': { content: '{"name": "test"}' }
+        }
+      };
+
+      jest.spyOn(gist, 'get').mockResolvedValue(mockGistData);
+
+      const jsContent = await gist.getContent('script.js');
+      const jsonContent = await gist.getContent('data.json');
+
+      expect(jsContent).toBe('console.log("hello");');
+      expect(jsonContent).toBe('{"name": "test"}');
+    });
+
+    it('should return empty string when file is not found in gist', async () => {
+      const mockGistData = {
+        id: mockId,
+        files: {
+          'existing.txt': { content: 'content' }
+        }
+      };
+
+      jest.spyOn(gist, 'get').mockResolvedValue(mockGistData);
+
+      const result = await gist.getContent('nonexistent.txt');
+
+      expect(result).toBe('');
+    });
+
+    it('should return empty string when gist has no files', async () => {
+      const mockGistData = {
+        id: mockId,
+        files: {}
+      };
+
+      jest.spyOn(gist, 'get').mockResolvedValue(mockGistData);
+
+      const result = await gist.getContent('anyfile.txt');
+
+      expect(result).toBe('');
+    });
+
+    it('should handle get method errors', async () => {
+      const errorMessage = 'Failed to fetch gist';
+      jest.spyOn(gist, 'get').mockRejectedValue(new Error(errorMessage));
+
+      await expect(gist.getContent('test.txt')).rejects.toThrow(errorMessage);
+    });
+  });
 });

@@ -28,6 +28,11 @@ class Gist {
     return this.request('GET /gists/{gist_id}');
   }
 
+  async getContent(fileName) {
+    const gist = await this.get();
+    return gist.files && gist.files[fileName] ? gist.files[fileName].content : '';
+  }
+
   async update(files, description) {
     const data = {
       files: {}
