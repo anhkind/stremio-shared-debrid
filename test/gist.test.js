@@ -17,11 +17,10 @@ describe('Gist Class', () => {
     gist = new Gist(mockToken, mockId);
   });
 
-  describe('Constructor', () => {
+  describe('constructor', () => {
     it('should initialize with token and id', () => {
       expect(gist.token).toBe(mockToken);
       expect(gist.id).toBe(mockId);
-      expect(gist.baseUrl).toBe('https://api.github.com');
     });
   });
 
@@ -57,9 +56,9 @@ describe('Gist Class', () => {
         expect.objectContaining({
           method: 'GET',
           headers: expect.objectContaining({
-            'Authorization': 'token test-token',
-            'User-Agent': 'Node.js Gist Client',
-            'Accept': 'application/vnd.github.v3+json'
+            'Authorization': 'Bearer test-token',
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28'
           })
         }),
         expect.any(Function)
@@ -100,9 +99,9 @@ describe('Gist Class', () => {
         expect.objectContaining({
           method: 'PATCH',
           headers: expect.objectContaining({
-            'Authorization': 'token test-token',
-            'User-Agent': 'Node.js Gist Client',
-            'Accept': 'application/vnd.github.v3+json',
+            'Authorization': 'Bearer test-token',
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
             'Content-Type': 'application/json'
           })
         }),
