@@ -1,5 +1,5 @@
 {
-  "name": "stremio-aaa",
+  "name": "stremio-shared-debrid",
   "version": "1.0.0",
   "description": "Shared user notifier for Stremio",
   "author": "Anh Nguyen <anhkind@gmail.com>",
