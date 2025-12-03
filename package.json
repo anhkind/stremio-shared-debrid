@@ -6,8 +6,6 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "vercel": "vercel",
-    "vercel:dev": "vercel dev",
     "test": "jest",
     "test:watch": "jest --watch"
   },
@@ -27,7 +25,6 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "supertest": "^7.1.4",
-    "vercel": "^48.12.1"
+    "supertest": "^7.1.4"
   }
 }
