@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "node index.js -- --launch",
+    "addon": "node src/addon.js -- --launch",
     "test": "jest",
     "test:watch": "jest --watch"
   },
