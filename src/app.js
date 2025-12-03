@@ -28,7 +28,7 @@ app.get('/:authToken/:gistId/:username/stream/:type/:id.json', async (req, res) 
     } else {
       respond(res, { streams: [{
         name:        'Shared Debrid',
-        description: `DANGER! ${username} is accessing!`,
+        description: `DANGER! ${statusData?.username} is accessing!`,
         ytId :       'abm8QCh7pBg' // BTS - Danger
       }] });
     }

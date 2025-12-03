@@ -46,7 +46,8 @@ describe('Express Server', () => {
 
     beforeEach(() => {
       mockStatusData = {
-        canAccess: jest.fn()
+        canAccess: jest.fn(),
+        username: 'anotheruser'
       };
       mockStatus = {
         get: jest.fn().mockResolvedValue(mockStatusData),
@@ -177,6 +178,25 @@ describe('Express Server', () => {
         .get('/token/gistid/denied_user/stream/movie/555.json')
         .expect(200);
       expect(deniedResponse.body.streams[0].name).toBe('Shared Debrid');
+    });
+
+    it('should return warning stream when statusData is null', async () => {
+      mockStatus.get.mockResolvedValue(null);
+
+      const response = await request(app)
+        .get('/token/gistid/user/stream/movie/999.json')
+        .expect(200);
+
+      expect(Status).toHaveBeenCalledWith('token', 'gistid');
+      expect(mockStatus.get).toHaveBeenCalled();
+      expect(mockStatus.update).not.toHaveBeenCalled();
+      expect(response.body).toEqual({
+        streams: [{
+          name: 'Shared Debrid',
+          description: 'DANGER! undefined is accessing!',
+          ytId: 'abm8QCh7pBg'
+        }]
+      });
     });
   });
 });
