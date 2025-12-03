@@ -90,8 +90,9 @@
 
     <script>
         // Function to build the manifest URL
-        function buildUrl(authToken, gistId, username) {
-            return `${window.location.origin}/${authToken}/${gistId}/${username}/manifest.json`;
+        function buildInstallUrl(authToken, gistId, username) {
+            const manifestUrl = `${window.location.origin}/${authToken}/${gistId}/${username}/manifest.json`;
+            return manifestUrl.replace(/https?/, 'stremio');
         }
 
         document.getElementById('configureForm').addEventListener('submit', function(e) {
@@ -104,8 +105,7 @@
             };
 
             // Build and display the manifest URL
-            const manifestUrl = buildUrl(formData.authToken, formData.gistId, formData.username);
-            const installUrl = manifestUrl.replace(/https?/, 'stremio') ;
+            const installUrl = buildInstallUrl(formData.authToken, formData.gistId, formData.username);
             console.log('Install URL:', installUrl);
         });
     </script>
