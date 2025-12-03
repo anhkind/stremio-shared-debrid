@@ -27,8 +27,8 @@ Actually can be anything just to identify you from others.
 ### FAQ
 
 #### _Why Gist?_
-We need a place to store the access time of the latest user for the share debrid. With Gist,
-we have it free and the Github Rest API is simply to use.
+We need a place to store the access time of the latest user for the shares debrid. With Gist,
+we have it free and the Github Rest API is simple to use.
 
 We will have this data under `shared-debrid.json` file of the gist like this:
 ```json
