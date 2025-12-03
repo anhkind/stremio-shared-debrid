@@ -22,3 +22,27 @@ This repo is ready for deploy to any hosting service but For simplicity, let's p
 
 #### Username
 Actually can be anything just to identify you from others.
+
+### FAQ
+
+#### Why Gist?
+We need a place to store the access time of the latest user for the share debrid. With Gist,
+we have it free and the Github Rest API is simply to use.
+
+We will have this data under `shared-debrid.json` file of the gist like this:
+```json
+{
+  "username": "Your Name",
+  "accessedAt": "2025-11-11T02:46:06.410Z"
+}
+```
+
+#### How do we know if the other user is actually using debrid service?
+We don't know! We only keep their last access time whenever they're about to open a debrid stream.
+- If the last access time is 3hrs ago or sooner, we assume that they have completed their streaming session,
+and there will be no waring/notification. 
+- If the last access time is within 3hrs window from now, we will see this warning displayed in the stream selection screen:
+    ```
+    Shared Debrid
+    DANGER! ${other username} is accessing!
+    ```     
