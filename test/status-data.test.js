@@ -51,7 +51,7 @@ describe('StatusData Class', () => {
 
     it('should use default username when not provided', () => {
       const statusData = new StatusData();
-      expect(statusData.username).toBe('grandma');
+      expect(statusData.username).toBe('Grandma');
     });
 
     it('should use provided username instead of default', () => {
@@ -66,7 +66,7 @@ describe('StatusData Class', () => {
 
     it('should use undefined username when explicitly provided', () => {
       const statusData = new StatusData(undefined);
-      expect(statusData.username).toBe('grandma'); // undefined will use default
+      expect(statusData.username).toBe('Grandma'); // undefined will use default
     });
 
     it('should accept empty string username', () => {

@@ -1,5 +1,5 @@
 class StatusData {
-  constructor(username = 'grandma', accessedAt = undefined) {
+  constructor(username = 'Grandma', accessedAt = undefined) {
     this.username   = username;
     this.accessedAt = accessedAt instanceof Date ? accessedAt : new Date(accessedAt ?? '1970-01-01');
   }
