@@ -15,7 +15,7 @@ const respond = (res, data) => {
 
 // Configuration route
 app.get('/configure', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'configure', 'index.html'));
+  res.sendFile(path.join(__dirname, '..', 'web', 'configure', 'index.html'));
 });
 
 // Manifest route

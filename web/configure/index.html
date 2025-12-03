@@ -76,12 +76,7 @@
 
             <div class="form-group">
                 <label for="username">Username:</label>
-                <input type="text" id="username" name="username" placeholder="Enter your username">
-            </div>
-
-            <div class="form-group">
-                <label for="notes">Notes (optional):</label>
-                <textarea id="notes" name="notes" rows="4" placeholder="Any additional notes or comments"></textarea>
+                <input type="text" id="username" name="username" placeholder="Enter your username, name or anything to identify you">
             </div>
 
             <button type="submit">Save Configuration</button>
@@ -98,10 +93,9 @@
             e.preventDefault();
 
             const formData = {
-                authToken: document.getElementById('authToken').value,
-                gistId: document.getElementById('gistId').value,
-                username: document.getElementById('username').value,
-                notes: document.getElementById('notes').value
+                authToken:  document.getElementById('authToken').value,
+                gistId:     document.getElementById('gistId').value,
+                username:   document.getElementById('username').value,
             };
 
             console.log('Configuration data:', formData);
