@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/configure",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/serverless.js"
+    }
+  ]
+}

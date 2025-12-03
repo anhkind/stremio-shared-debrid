@@ -32,3 +32,5 @@ node_modules
 
 *.ps1
 subapps
+
+.vercel
