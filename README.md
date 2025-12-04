@@ -43,7 +43,7 @@ and there will be no waring/notification.
 - If the last access time is within 3hrs window from now, we will see this warning displayed in the stream selection screen:
     ```
     Shared Debrid
-    DANGER! ${other username} is accessing!
+    DANGER! {other username} is accessing!
     ```     
 
 #### _Does the addon block/lock the streams when the warning is shown?_
