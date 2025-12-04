@@ -1,4 +1,10 @@
-## Stremio Shared Debrid
+## Stremio Shared Debrid - shared debrid notifier for Stremio streams
+Debrid services like `real-debrid` only allow 1 stream connection from 1 IP at a time, any violation might result in permanent ban. 
+This addon helps solve this situation by adding a warning on top of the stream list if the debrid account might be used by someone else:
+```
+Shared Debrid
+DANGER! {other username} is accessing!
+```     
 
 ### Disclaimer
 _This addon is provided as-is, without any warranties or guarantees of any kind. It does not collect, store, or transmit any personal data. Use this addon entirely at your own risk._
