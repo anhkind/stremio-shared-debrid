@@ -57,7 +57,7 @@ then install the debrid addons again, OR
 - Use any Addon manager to change the order of the installed addons.
 
 ### Self-host 
-This repo is ready for deploy to any hosting service but For simplicity, let's pick Vercel.
+This repo is ready for deploy to any hosting service but for simplicity, let's pick Vercel.
 
 - Fork this Github repo
 - Signup/Login on Vercel and connect to Github
