@@ -47,7 +47,7 @@ and there will be no waring/notification.
     ```     
 
 #### _Does the addon block/lock the streams when the warning is shown?_
-The addon **does NOT block/lock anything** as its just tries to give warning when the debrid service _might_ be used by others. 
+**NO, the addon does NOT block/lock anything** as its just tries to give warning when the debrid service _might_ be used by others. 
 If we're confident that the debrid service is NOT being used, we can just ignore the warning and select streams like normal.  
 
 #### _Why is the "DANGER!" warning above not displayed on top but somewhere in the middle of the stream list?_
