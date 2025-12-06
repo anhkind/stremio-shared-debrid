@@ -35,13 +35,13 @@ app.get('/:authToken/:gistId/:username{/:sessionMinutes}/stream/:type/:id.json',
   try {
     const status = new Status(authToken, gistId);
     const statusData = await status.get();
-    if (statusData?.canAccess(username)) {
+    if (statusData.canAccess(username)) {
       await status.update(username, sessionMinutes);
       respond(res, { streams: [] });
     } else {
       respond(res, { streams: [{
         name:        'Shared Debrid',
-        description: `DANGER! ${statusData?.username} is watching!`,
+        description: `DANGER! ${statusData.username} is watching! Waiting time: ${statusData.getWaitingMinutes()} mins`,
         ytId :       'abm8QCh7pBg' // BTS - Danger
       }] });
     }

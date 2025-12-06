@@ -1,5 +1,6 @@
 const DEFAULT_TIMESTAMP       = '1970-01-01';
 const DEFAULT_SESSION_MINUTES = 180;
+const MAX_WAITING_MINUTES     = 999;
 
 class StatusData {
   constructor({username, endedAt, accessedAt}) {
@@ -21,6 +22,14 @@ class StatusData {
   accessFor(sessionMinutes, startedAt = new Date()) {
     sessionMinutes = this._parseNumeric(sessionMinutes);
     this.endedAt   = new Date(startedAt.getTime() + sessionMinutes * 60 * 1000);
+  }
+
+  getWaitingMinutes(startedAt = new Date(), maxValue = MAX_WAITING_MINUTES) {
+    if (!this.endedAt || this.endedAt <= startedAt) return 0;
+    const startEpoch   = startedAt.getTime();
+    const endEpoch     = this.endedAt.getTime();
+    const waitingMins  = Math.ceil((endEpoch - startEpoch) / 1000 / 60);
+    return Math.min(waitingMins, maxValue);
   }
 
   toObject() {

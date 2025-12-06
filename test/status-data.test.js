@@ -144,7 +144,6 @@ describe('StatusData Class', () => {
       expect(statusData.endedAt).toBeInstanceOf(Date);
     });
 
-    
     it('should work with default date', () => {
       const defaultStatusData = new StatusData({username: 'default-user'});
       const result = defaultStatusData.toObject();
@@ -335,6 +334,112 @@ describe('StatusData Class', () => {
     });
   });
 
+  describe('getWaitingMinutes method', () => {
+    let statusData;
+
+    beforeEach(() => {
+      statusData = new StatusData({username: 'test-user'});
+    });
+
+    it('should get waiting minutes for active session', () => {
+      // Set endedAt to 13:00 (3 hours after 10:00)
+      statusData.endedAt = new Date("2024-01-01T13:00:00Z");
+
+      // Check at 11:00 (60 minutes into session)
+      const timestamp = new Date("2024-01-01T11:00:00Z");
+      const waitingMinutes = statusData.getWaitingMinutes(timestamp);
+      expect(waitingMinutes).toBe(120); // 180 - 60 = 120 minutes remaining
+    });
+
+    it('should return 0 when session has expired', () => {
+      // Set endedAt to 11:00 (1 hour after 10:00)
+      statusData.endedAt = new Date("2024-01-01T11:00:00Z");
+
+      // Check at 12:00 (1 hour after endedAt)
+      const timestamp = new Date("2024-01-01T12:00:00Z");
+      const waitingMinutes = statusData.getWaitingMinutes(timestamp);
+      expect(waitingMinutes).toBe(0); // Session has expired
+    });
+
+    it('should return 0 when session just started', () => {
+      // Set endedAt to 13:00 (3 hours after 10:00)
+      statusData.endedAt = new Date("2024-01-01T13:00:00Z");
+
+      // Check exactly at start time
+      const timestamp = new Date("2024-01-01T10:00:00Z");
+      const waitingMinutes = statusData.getWaitingMinutes(timestamp);
+      expect(waitingMinutes).toBe(180); // Full session time remaining
+    });
+
+    it('should return 0 when endedAt is not set', () => {
+      // No endedAt set (defaults to 1970-01-01)
+
+      const waitingMinutes = statusData.getWaitingMinutes();
+      expect(waitingMinutes).toBe(0);
+    });
+
+    it('should handle fractional minutes correctly', () => {
+      // Set endedAt with fractional minutes: 2024-01-01T12:00:42 (120.7 minutes after 10:00:00)
+      statusData.endedAt = new Date("2024-01-01T12:00:42Z");
+
+      // Check 30 seconds after start
+      const timestamp = new Date("2024-01-01T10:00:30Z");
+      const waitingMinutes = statusData.getWaitingMinutes(timestamp);
+      // Should round up the calculation: (120.7*60 - 30) / 60 ≈ 120.2, then round up to 121
+      expect(waitingMinutes).toBe(121);
+    });
+
+    it('should work with custom timestamp', () => {
+      // Set endedAt to 11:30 (90 minutes after 10:00)
+      statusData.endedAt = new Date("2024-01-01T11:30:00Z");
+
+      // Check at 10:45
+      const timestamp = new Date("2024-01-01T10:45:00Z");
+      const waitingMinutes = statusData.getWaitingMinutes(timestamp);
+      expect(waitingMinutes).toBe(45); // 90 - 45 = 45 minutes remaining
+    });
+
+    it('should handle very small remaining time', () => {
+      // Set endedAt to 10:01:30 (1.5 minutes after start)
+      statusData.endedAt = new Date("2024-01-01T10:01:30Z");
+
+      // Check at 10:00:30 (30 seconds into session)
+      const timestamp = new Date("2024-01-01T10:00:30Z");
+      const waitingMinutes = statusData.getWaitingMinutes(timestamp);
+      expect(waitingMinutes).toBe(1); // round ups to 1 minute remaining
+    });
+
+    it('should cap waiting minutes to maxValue', () => {
+      // Set endedAt far in the future
+      statusData.endedAt = new Date("2024-01-02T10:00:00Z"); // 24 hours later
+
+      // Check at start time with custom maxValue
+      const timestamp = new Date("2024-01-01T10:00:00Z");
+      const waitingMinutes = statusData.getWaitingMinutes(timestamp, 999);
+      expect(waitingMinutes).toBe(999); // Capped at maxValue
+    });
+
+    it('should use default MAX_WAITING_MINUTES when maxValue is not provided', () => {
+      // Set endedAt far in the future
+      statusData.endedAt = new Date("2024-01-02T10:00:00Z"); // 24 hours later = 1440 minutes
+
+      // Check at start time without providing maxValue
+      const timestamp = new Date("2024-01-01T10:00:00Z");
+      const waitingMinutes = statusData.getWaitingMinutes(timestamp);
+      expect(waitingMinutes).toBe(999); // Should be capped at MAX_WAITING_MINUTES (999)
+    });
+
+    it('should not cap when below maxValue', () => {
+      // Set endedAt to 11:40 (100 minutes after 10:00)
+      statusData.endedAt = new Date("2024-01-01T11:40:00Z");
+
+      // Check with custom maxValue
+      const timestamp = new Date("2024-01-01T10:00:00Z");
+      const waitingMinutes = statusData.getWaitingMinutes(timestamp, 200);
+      expect(waitingMinutes).toBe(100); // Not capped, since 100 < 200
+    });
+  });
+
   describe('canAccess method', () => {
     beforeEach(() => {
       // Set a fixed date for predictable testing
@@ -458,7 +563,7 @@ describe('StatusData Class', () => {
       expect(statusData.canAccess(false, new Date('2024-01-01T14:00:00Z'))).toBe(true);
     });
 
-    
+
     it('should handle zero session minutes', () => {
       // sessionMinutes is ignored, endedAt is calculated using DEFAULT_SESSION_MINUTES
       const statusData = new StatusData({
