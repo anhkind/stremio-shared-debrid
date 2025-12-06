@@ -22,20 +22,25 @@ describe('Status Class', () => {
     mockStatusData = {
       username: 'grandma',
       accessedAt: new Date('1970-01-01'),
-      accessNow: jest.fn().mockReturnThis(),
-      toObject: jest.fn().mockReturnValue({
-        username: 'grandma',
-        accessedAt: new Date('1970-01-01').toISOString()
+      endedAt: new Date('1970-01-01'),
+      accessFor: jest.fn().mockImplementation(function(sessionMinutes) {
+        // Simulate the accessFor behavior: update endedAt based on sessionMinutes
+        const minutes = typeof sessionMinutes === 'number' ? sessionMinutes : 180; // DEFAULT_SESSION_MINUTES
+        // Use current time for startedAt (default in StatusData.accessFor)
+        const startedAt = new Date('2024-01-01T10:00:00Z');
+        this.endedAt = new Date(startedAt.getTime() + minutes * 60 * 1000);
+        return this;
+      }),
+      toObject: jest.fn().mockImplementation(function() {
+        return {
+          username: this.username,
+          endedAt: this.endedAt.toISOString()
+        };
       })
     };
 
+    // Default mock implementation returns mockStatusData
     StatusData.mockImplementation(() => mockStatusData);
-
-    // Make sure toObject is properly mocked
-    mockStatusData.toObject = jest.fn().mockReturnValue({
-      username: 'grandma',
-      accessedAt: new Date('1970-01-01').toISOString()
-    });
 
     status = new Status(mockToken, mockId, mockFileName);
   });
@@ -70,12 +75,13 @@ describe('Status Class', () => {
       const mockNewStatusData = {
         username: 'test-user',
         accessedAt: new Date('2023-01-01T00:00:00Z'),
-        accessNow: jest.fn().mockReturnThis(),
+        endedAt: new Date('2023-01-01T03:00:00Z'), // Default 180 minutes after accessedAt
+        accessFor: jest.fn().mockReturnThis(),
         toObject: jest.fn().mockReturnValue(mockJsonData)
       };
 
-      StatusData.mockImplementation((username, accessedAt) => {
-        if (username === 'test-user') {
+      StatusData.mockImplementation((data) => {
+        if (data && data.username === 'test-user') {
           return mockNewStatusData;
         }
         return mockStatusData;
@@ -87,7 +93,7 @@ describe('Status Class', () => {
 
       expect(status.gist.getContent).toHaveBeenCalledWith(mockFileName);
       expect(result).toBe(mockNewStatusData);
-      expect(StatusData).toHaveBeenCalledWith('test-user', '2023-01-01T00:00:00Z');
+      expect(StatusData).toHaveBeenCalledWith({username: 'test-user', accessedAt: '2023-01-01T00:00:00Z'});
     });
 
     it('should return default StatusData when file content is empty', async () => {
@@ -128,30 +134,26 @@ describe('Status Class', () => {
 
   describe('update method', () => {
     it('should update gist with StatusData serialized as JSON', async () => {
-      const mockDataObject = { username: 'grandma', accessedAt: '1970-01-01T00:00:00.000Z' };
-      const expectedString = JSON.stringify(mockDataObject, null, 2);
-
       status.gist.updateContent = jest.fn().mockResolvedValue({ updated: true });
 
       const result = await status.update();
 
-      expect(status.data.accessNow).toHaveBeenCalled();
-      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, expectedString);
+      expect(status.data.accessFor).toHaveBeenCalledWith(undefined);
+      expect(status.data.endedAt.toISOString()).toBe('2024-01-01T13:00:00.000Z'); // 180 minutes after start
+      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, expect.stringContaining('endedAt'));
       expect(result).toEqual({ updated: true });
     });
 
     it('should update username when provided', async () => {
       const newUsername = 'new-user';
-      const mockDataObject = { username: newUsername, accessedAt: '1970-01-01T00:00:00.000Z' };
-      const expectedString = JSON.stringify(mockDataObject, null, 2);
-
       status.gist.updateContent = jest.fn().mockResolvedValue({ updated: true });
 
       const result = await status.update(newUsername);
 
       expect(status.data.username).toBe(newUsername);
-      expect(status.data.accessNow).toHaveBeenCalled();
-      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, expectedString);
+      expect(status.data.accessFor).toHaveBeenCalledWith(undefined);
+      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, expect.stringContaining(newUsername));
+      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, expect.stringContaining('endedAt'));
       expect(result).toEqual({ updated: true });
     });
 
@@ -163,20 +165,48 @@ describe('Status Class', () => {
       await expect(status.update())
         .rejects.toThrow('Failed to update status: Update failed');
 
-      expect(status.data.accessNow).toHaveBeenCalled();
+      expect(status.data.accessFor).toHaveBeenCalledWith(undefined);
     });
 
     it('should not change username when not provided', async () => {
-      const mockDataObject = { username: 'grandma', accessedAt: '1970-01-01T00:00:00.000Z' };
-      const expectedString = JSON.stringify(mockDataObject, null, 2);
-
       status.gist.updateContent = jest.fn().mockResolvedValue({ updated: true });
 
       const result = await status.update();
 
       expect(status.data.username).toBe('grandma'); // Should remain unchanged
-      expect(status.data.accessNow).toHaveBeenCalled();
-      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, expectedString);
+      expect(status.data.accessFor).toHaveBeenCalledWith(undefined);
+      expect(status.data.endedAt.toISOString()).toBe('2024-01-01T13:00:00.000Z'); // 180 minutes after start
+      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, expect.stringContaining('grandma'));
+      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, expect.stringContaining('endedAt'));
+      expect(result).toEqual({ updated: true });
+    });
+
+    it('should update username and sessionMinutes when both are provided', async () => {
+      const newUsername = 'new-user';
+      const sessionMinutes = 120;
+      status.gist.updateContent = jest.fn().mockResolvedValue({ updated: true });
+
+      const result = await status.update(newUsername, sessionMinutes);
+
+      expect(status.data.username).toBe(newUsername);
+      expect(status.data.accessFor).toHaveBeenCalledWith(sessionMinutes);
+      expect(status.data.endedAt.toISOString()).toBe('2024-01-01T12:00:00.000Z'); // 120 minutes after start
+      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, expect.stringContaining(newUsername));
+      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, expect.stringContaining('endedAt'));
+      expect(result).toEqual({ updated: true });
+    });
+
+    it('should update sessionMinutes when username is not provided', async () => {
+      const sessionMinutes = 90;
+      status.gist.updateContent = jest.fn().mockResolvedValue({ updated: true });
+
+      const result = await status.update(undefined, sessionMinutes);
+
+      expect(status.data.username).toBe('grandma'); // Should remain unchanged
+      expect(status.data.accessFor).toHaveBeenCalledWith(sessionMinutes);
+      expect(status.data.endedAt.toISOString()).toBe('2024-01-01T11:30:00.000Z'); // 90 minutes after start
+      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, expect.stringContaining('grandma'));
+      expect(status.gist.updateContent).toHaveBeenCalledWith(mockFileName, expect.stringContaining('endedAt'));
       expect(result).toEqual({ updated: true });
     });
   });

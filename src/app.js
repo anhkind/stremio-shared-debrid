@@ -24,19 +24,19 @@ app.get('/configure', (req, res) => {
 });
 
 // Manifest route
-app.get('/:authToken/:gistId/:username/manifest.json', (req, res) => {
+app.get('/:authToken/:gistId/:username{/:sessionMinutes}/manifest.json', (req, res) => {
   respond(res, manifest);
 });
 
 // Stream route
-app.get('/:authToken/:gistId/:username/stream/:type/:id.json', async (req, res) => {
-  const { authToken, gistId, username } = req.params;
+app.get('/:authToken/:gistId/:username{/:sessionMinutes}/stream/:type/:id.json', async (req, res) => {
+  const { authToken, gistId, username, sessionMinutes } = req.params;
 
   try {
     const status = new Status(authToken, gistId);
     const statusData = await status.get();
     if (statusData?.canAccess(username)) {
-      await status.update(username);
+      await status.update(username, sessionMinutes);
       respond(res, { streams: [] });
     } else {
       respond(res, { streams: [{
