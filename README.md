@@ -3,7 +3,7 @@ Debrid services like `real-debrid` only allow 1 stream connection from 1 IP at a
 This addon helps solve this situation by adding a warning on top of the stream list if the debrid account might be used by someone else:
 ```
 Shared Debrid
-DANGER! {other username} is watching!
+DANGER! {other username} is watching! Waiting time: X mins
 ```     
 
 ### Disclaimer
@@ -48,7 +48,7 @@ If the estimated ended time has not been reached yet, we will see this warning d
 
 ```
 Shared Debrid
-DANGER! {other username} is watching!
+DANGER! {other username} is watching! Waiting time: X mins
 ```     
 
 #### _Does the addon block/lock the streams when the warning is shown?_
