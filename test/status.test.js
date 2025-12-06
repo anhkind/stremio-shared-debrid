@@ -29,13 +29,8 @@ describe('Status Class', () => {
       })
     };
 
+    // Default mock implementation returns mockStatusData
     StatusData.mockImplementation(() => mockStatusData);
-
-    // Make sure toObject is properly mocked
-    mockStatusData.toObject = jest.fn().mockReturnValue({
-      username: 'grandma',
-      accessedAt: new Date('1970-01-01').toISOString()
-    });
 
     status = new Status(mockToken, mockId, mockFileName);
   });

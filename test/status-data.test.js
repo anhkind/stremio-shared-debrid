@@ -89,6 +89,62 @@ describe('StatusData Class', () => {
       expect(statusData.username).toBe(username);
       expect(statusData.accessedAt).toBeInstanceOf(Date);
     });
+
+    // sessionMinutes validation tests
+    it('should use default sessionMinutes when not provided', () => {
+      const statusData = new StatusData('test-user');
+      expect(statusData.sessionMinutes).toBe(180);
+    });
+
+    it('should accept positive integer sessionMinutes', () => {
+      const statusData = new StatusData('test-user', '2023-01-01', 120);
+      expect(statusData.sessionMinutes).toBe(120);
+    });
+
+    it('should round down fractional sessionMinutes', () => {
+      const statusData = new StatusData('test-user', '2023-01-01', 120.7);
+      expect(statusData.sessionMinutes).toBe(121); // Math.round(120.7) = 121
+    });
+
+    it('should round up fractional sessionMinutes', () => {
+      const statusData = new StatusData('test-user', '2023-01-01', 120.3);
+      expect(statusData.sessionMinutes).toBe(120); // Math.round(120.3) = 120
+    });
+
+    it('should clamp negative sessionMinutes to 0', () => {
+      const statusData = new StatusData('test-user', '2023-01-01', -10);
+      expect(statusData.sessionMinutes).toBe(0);
+    });
+
+    it('should use default sessionMinutes for non-numeric values', () => {
+      const statusData = new StatusData('test-user', '2023-01-01', 'invalid');
+      expect(statusData.sessionMinutes).toBe(180);
+    });
+
+    it('should use default sessionMinutes for null', () => {
+      const statusData = new StatusData('test-user', '2023-01-01', null);
+      expect(statusData.sessionMinutes).toBe(180);
+    });
+
+    it('should handle 0 sessionMinutes', () => {
+      const statusData = new StatusData('test-user', '2023-01-01', 0);
+      expect(statusData.sessionMinutes).toBe(0);
+    });
+
+    it('should handle very large sessionMinutes', () => {
+      const statusData = new StatusData('test-user', '2023-01-01', 10000);
+      expect(statusData.sessionMinutes).toBe(10000);
+    });
+
+    it('should handle float sessionMinutes', () => {
+      const statusData = new StatusData('test-user', '2023-01-01', 90.5);
+      expect(statusData.sessionMinutes).toBe(91); // Math.round(90.5) = 91 (rounds half up)
+    });
+
+    it('should handle string numeric sessionMinutes', () => {
+      const statusData = new StatusData('test-user', '2023-01-01', '120');
+      expect(statusData.sessionMinutes).toBe(180); // '120' is typeof string, not number
+    });
   });
 
   describe('accessNow method', () => {
