@@ -19,6 +19,11 @@ class StatusData {
     return this.endedAt < timestamp;
   }
 
+  accessFor(sessionMinutes, startedAt = new Date()) {
+    sessionMinutes = typeof sessionMinutes == 'number' ? Math.max(0, Math.round(sessionMinutes)) : DEFAULT_SESSION_MINUTES;
+    this.endedAt   = new Date(startedAt.getTime() + sessionMinutes * 60 * 1000);
+  }
+
   accessNow() {
     this.accessedAt = new Date();
   }

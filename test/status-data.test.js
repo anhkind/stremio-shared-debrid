@@ -281,6 +281,169 @@ describe('StatusData Class', () => {
     });
   });
 
+  describe('accessFor method', () => {
+    beforeEach(() => {
+      // Create a fresh StatusData instance for each test
+      statusData = new StatusData({username: 'test-user', accessedAt: '2023-01-01T10:00:00Z'});
+    });
+
+    it('should set endedAt based on sessionMinutes from default start time', () => {
+      const sessionMinutes = 60;
+      const startedAt = new Date('2024-01-01T10:00:00Z');
+      statusData.accessFor(sessionMinutes, startedAt);
+
+      const expectedEndedAt = startedAt.getTime() + sessionMinutes * 60 * 1000;
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
+    });
+
+    it('should set endedAt based on sessionMinutes from custom start time', () => {
+      const sessionMinutes = 120;
+      const startedAt = new Date('2023-01-01T12:00:00Z');
+      statusData.accessFor(sessionMinutes, startedAt);
+
+      const expectedEndedAt = startedAt.getTime() + sessionMinutes * 60 * 1000;
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
+    });
+
+    it('should handle zero sessionMinutes', () => {
+      const startedAt = new Date('2024-01-01T10:00:00Z');
+      statusData.accessFor(0, startedAt);
+
+      // With 0 minutes, endedAt should be the same as startedAt
+      expect(statusData.endedAt.getTime()).toBe(startedAt.getTime());
+    });
+
+    it('should handle positive integer sessionMinutes', () => {
+      const startedAt = new Date('2024-01-01T10:00:00Z');
+      statusData.accessFor(180, startedAt);
+
+      const expectedEndedAt = startedAt.getTime() + 180 * 60 * 1000;
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
+    });
+
+    it('should round down fractional sessionMinutes', () => {
+      const startedAt = new Date("2024-01-01T10:00:00Z");
+      statusData.accessFor(120.3, startedAt);
+
+      // 120.3 should be rounded to 120
+      const expectedEndedAt = startedAt.getTime() + 120 * 60 * 1000;
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
+    });
+
+    it('should round up fractional sessionMinutes', () => {
+      const startedAt = new Date("2024-01-01T10:00:00Z");
+      statusData.accessFor(120.7, startedAt);
+
+      // 120.7 should be rounded to 121
+      const expectedEndedAt = startedAt.getTime() + 121 * 60 * 1000;
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
+    });
+
+    it('should clamp negative sessionMinutes to 0', () => {
+      const startedAt = new Date("2024-01-01T10:00:00Z");
+      statusData.accessFor(-10, startedAt);
+
+      // Negative should be clamped to 0
+      const expectedEndedAt = startedAt.getTime();
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
+    });
+
+    it('should use default sessionMinutes for non-numeric values', () => {
+      const startedAt = new Date("2024-01-01T10:00:00Z");
+      statusData.accessFor('invalid', startedAt);
+
+      // Should use DEFAULT_SESSION_MINUTES (180)
+      const expectedEndedAt = startedAt.getTime() + 180 * 60 * 1000;
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
+    });
+
+    it('should use default sessionMinutes for undefined values', () => {
+      const startedAt = new Date("2024-01-01T10:00:00Z");
+      statusData.accessFor(undefined, startedAt);
+
+      // Should use DEFAULT_SESSION_MINUTES (180)
+      const expectedEndedAt = startedAt.getTime() + 180 * 60 * 1000;
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
+    });
+
+    it('should handle very large sessionMinutes', () => {
+      const startedAt = new Date("2024-01-01T10:00:00Z");
+      statusData.accessFor(10000, startedAt);
+
+      const expectedEndedAt = startedAt.getTime() + 10000 * 60 * 1000;
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
+    });
+
+    it('should handle float sessionMinutes with .5 rounding up', () => {
+      const startedAt = new Date("2024-01-01T10:00:00Z");
+      statusData.accessFor(90.5, startedAt);
+
+      // 90.5 should be rounded to 91
+      const expectedEndedAt = startedAt.getTime() + 91 * 60 * 1000;
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
+    });
+
+    it('should handle string numeric sessionMinutes as invalid', () => {
+      const startedAt = new Date("2024-01-01T10:00:00Z");
+      statusData.accessFor('120', startedAt);
+
+      // String numeric should be treated as invalid, use default
+      const expectedEndedAt = startedAt.getTime() + 180 * 60 * 1000;
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
+    });
+
+    it('should work with different startedAt dates', () => {
+      const startedAt = new Date('2023-12-25T00:00:00Z');
+      statusData.accessFor(30, startedAt);
+
+      const expectedEndedAt = startedAt.getTime() + 30 * 60 * 1000;
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
+    });
+
+    it('should integrate with canAccess method correctly', () => {
+      // Set access for 60 minutes from 10:00
+      statusData.accessFor(60, new Date('2023-01-01T10:00:00Z'));
+
+      // Access should be denied at 10:30 (within session, not expired yet)
+      expect(statusData.canAccess('other-user', new Date('2023-01-01T10:30:00Z'))).toBe(false);
+
+      // Access should be denied at 11:00 (at session end - still not expired)
+      expect(statusData.canAccess('other-user', new Date('2023-01-01T11:00:00Z'))).toBe(false);
+
+      // Access should be granted at 11:01 (after session expired)
+      expect(statusData.canAccess('other-user', new Date('2023-01-01T11:01:00Z'))).toBe(true);
+    });
+
+    it('should update endedAt multiple times', () => {
+      // First access for 30 minutes
+      const firstStartedAt = new Date('2023-01-01T10:00:00Z');
+      statusData.accessFor(30, firstStartedAt);
+      let expectedEndedAt = firstStartedAt.getTime() + 30 * 60 * 1000;
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
+
+      // Then extend to 120 minutes from 11:00
+      const secondStartedAt = new Date('2023-01-01T11:00:00Z');
+      statusData.accessFor(120, secondStartedAt);
+      expectedEndedAt = secondStartedAt.getTime() + 120 * 60 * 1000;
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
+    });
+
+    it('should affect canAccess behavior for same username (always true)', () => {
+      statusData.accessFor(1, new Date('2023-01-01T10:00:00Z')); // Very short session
+
+      // Same username should always have access regardless of session time
+      expect(statusData.canAccess('test-user', new Date('2023-01-01T12:00:00Z'))).toBe(true);
+    });
+
+    it('should preserve username when updating access', () => {
+      const originalUsername = statusData.username;
+      const startedAt = new Date("2024-01-01T10:00:00Z");
+      statusData.accessFor(60, startedAt);
+
+      expect(statusData.username).toBe(originalUsername);
+    });
+  });
+
   describe('canAccess method', () => {
     beforeEach(() => {
       // Set a fixed date for predictable testing
