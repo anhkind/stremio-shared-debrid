@@ -69,8 +69,8 @@ describe('Status Class', () => {
         toObject: jest.fn().mockReturnValue(mockJsonData)
       };
 
-      StatusData.mockImplementation((username, accessedAt) => {
-        if (username === 'test-user') {
+      StatusData.mockImplementation((data) => {
+        if (data && data.username === 'test-user') {
           return mockNewStatusData;
         }
         return mockStatusData;
@@ -82,7 +82,7 @@ describe('Status Class', () => {
 
       expect(status.gist.getContent).toHaveBeenCalledWith(mockFileName);
       expect(result).toBe(mockNewStatusData);
-      expect(StatusData).toHaveBeenCalledWith('test-user', '2023-01-01T00:00:00Z');
+      expect(StatusData).toHaveBeenCalledWith({username: 'test-user', accessedAt: '2023-01-01T00:00:00Z'});
     });
 
     it('should return default StatusData when file content is empty', async () => {

@@ -1,7 +1,7 @@
 const DEFAULT_SESSION_MINUTES = 180;
 
 class StatusData {
-  constructor(username = undefined, accessedAt = undefined, sessionMinutes = undefined) {
+  constructor({username, accessedAt, sessionMinutes}) {
     this.username       = username ?? 'Grandma';
     this.sessionMinutes = typeof sessionMinutes == 'number' ? Math.max(0, Math.round(sessionMinutes)) : DEFAULT_SESSION_MINUTES;
     this.accessedAt     = new Date(accessedAt);
