@@ -272,7 +272,7 @@ describe('StatusData Class', () => {
     it('should return true when username matches this.username regardless of session time', () => {
       const statusData = new StatusData('test-user', '1970-01-01T00:00:00Z');
 
-      const result = statusData.canAccess('test-user', 1); // 1 minute session
+      const result = statusData.canAccess('test-user'); // session time doesn't matter for same username
 
       expect(result).toBe(true);
     });
@@ -286,30 +286,30 @@ describe('StatusData Class', () => {
     });
 
     it('should return true for different username when session has expired', () => {
-      const statusData = new StatusData('original-user', '2023-06-15T08:00:00Z'); // 6 hours ago
+      const statusData = new StatusData('original-user', '2023-06-15T08:00:00Z', 60); // 6 hours ago with 60 min session
 
-      const result = statusData.canAccess('different-user', 60); // 60 minutes session
+      const result = statusData.canAccess('different-user'); // uses instance's sessionMinutes (60)
 
       expect(result).toBe(true);
     });
 
     it('should handle custom session minutes correctly', () => {
-      const statusData = new StatusData('original-user', '2023-06-15T13:00:00Z'); // 1 hour ago
-
       // 30 minutes session - should be expired
-      let result = statusData.canAccess('different-user', 30);
+      const statusData30 = new StatusData('original-user', '2023-06-15T13:00:00Z', 30); // 1 hour ago with 30 min session
+      let result = statusData30.canAccess('different-user');
       expect(result).toBe(true);
 
       // 120 minutes session - should still be valid
-      result = statusData.canAccess('different-user', 120);
+      const statusData120 = new StatusData('original-user', '2023-06-15T13:00:00Z', 120); // 1 hour ago with 120 min session
+      result = statusData120.canAccess('different-user');
       expect(result).toBe(false);
     });
 
     it('should handle edge case of session exactly expired', () => {
-      const statusData = new StatusData('original-user', '2023-06-15T10:59:59Z'); // 3 hours + 1 second ago
+      const statusData = new StatusData('original-user', '2023-06-15T10:59:59Z', 180); // 3 hours + 1 second ago with 180 min session
 
       // Exactly 180 minutes session (should be expired by 1 second)
-      const result = statusData.canAccess('different-user', 180);
+      const result = statusData.canAccess('different-user');
       expect(result).toBe(true);
     });
 
@@ -330,105 +330,105 @@ describe('StatusData Class', () => {
     });
 
     it('should handle numeric usernames', () => {
-      const statusData = new StatusData(123, '2023-06-15T12:00:00Z'); // 2 hours ago
+      const statusData = new StatusData(123, '2023-06-15T12:00:00Z', 60); // 2 hours ago with 60 min session
 
       // Same numeric username
       expect(statusData.canAccess(123)).toBe(true);
 
       // Different numeric username with expired session
-      expect(statusData.canAccess(456, 60)).toBe(true);
+      expect(statusData.canAccess(456)).toBe(true);
     });
 
     it('should handle boolean usernames', () => {
-      const statusData = new StatusData(true, '2023-06-15T12:00:00Z'); // 2 hours ago
+      const statusData = new StatusData(true, '2023-06-15T12:00:00Z', 60); // 2 hours ago with 60 min session
 
       // Same boolean username
       expect(statusData.canAccess(true)).toBe(true);
 
       // Different boolean username with expired session
-      expect(statusData.canAccess(false, 60)).toBe(true);
+      expect(statusData.canAccess(false)).toBe(true);
     });
 
     it('should work correctly after accessNow is called', () => {
-      const statusData = new StatusData('original-user', '2023-06-15T10:00:00Z');
+      const statusData = new StatusData('original-user', '2023-06-15T10:00:00Z', 60); // 5 hours ago with 60 min session
 
-      // Initially session should be expired for 1 hour session
-      expect(statusData.canAccess('different-user', 60)).toBe(true);
+      // Initially session should be expired
+      expect(statusData.canAccess('different-user')).toBe(true);
 
       // Refresh to current time
       statusData.accessNow();
 
       // Now session should be valid
-      expect(statusData.canAccess('different-user', 60)).toBe(false);
+      expect(statusData.canAccess('different-user')).toBe(false);
     });
 
     it('should handle zero session minutes', () => {
-      const statusData = new StatusData('original-user', '2023-06-15T13:59:59Z'); // 1 second ago
+      const statusData = new StatusData('original-user', '2023-06-15T13:59:59Z', 0); // 1 second ago with 0 min session
 
-      const result = statusData.canAccess('different-user', 0);
+      const result = statusData.canAccess('different-user');
 
       expect(result).toBe(true);
     });
 
     it('should handle negative session minutes', () => {
-      const statusData = new StatusData('original-user', '2023-06-15T14:00:00Z'); // current time
+      const statusData = new StatusData('original-user', '2023-06-15T10:00:00Z', -10); // 4 hours ago with -10 min (clamped to 0)
 
-      const result = statusData.canAccess('different-user', -10);
+      const result = statusData.canAccess('different-user');
 
       expect(result).toBe(true);
     });
 
     it('should work with fractional session minutes', () => {
-      const statusData = new StatusData('original-user', '2023-06-15T13:59:29Z'); // 31 seconds ago
+      const statusData = new StatusData('original-user', '2023-06-15T10:59:29Z', 0.5); // 3+ hours ago with 0.5 min (rounded to 1 min)
 
-      const result = statusData.canAccess('different-user', 0.5); // 30 seconds
+      const result = statusData.canAccess('different-user');
 
       expect(result).toBe(true);
     });
 
     it('should handle session time boundary conditions precisely', () => {
-      const statusData = new StatusData('original-user', '2023-06-15T12:00:00Z'); // 2 hours ago
-
-      // 119 minutes - should still be expired
-      let result = statusData.canAccess('different-user', 119);
+      // 119 minutes - should still be expired (2 hours = 120 minutes)
+      const statusData119 = new StatusData('original-user', '2023-06-15T12:00:00Z', 119); // 2 hours ago with 119 min session
+      let result = statusData119.canAccess('different-user');
       expect(result).toBe(true);
 
       // 121 minutes - should still be expired
-      result = statusData.canAccess('different-user', 121);
+      const statusData121 = new StatusData('original-user', '2023-06-15T12:00:00Z', 121); // 2 hours ago with 121 min session
+      result = statusData121.canAccess('different-user');
       expect(result).toBe(false);
     });
 
     it('should handle usernames with special characters', () => {
-      const statusData = new StatusData('user@domain.com', '2023-06-15T12:00:00Z'); // 2 hours ago
+      const statusData = new StatusData('user@domain.com', '2023-06-15T12:00:00Z', 60); // 2 hours ago with 60 min session
 
       // Exact match
       expect(statusData.canAccess('user@domain.com')).toBe(true);
 
       // Different user with special characters and expired session
-      expect(statusData.canAccess('other@domain.com', 60)).toBe(true);
+      expect(statusData.canAccess('other@domain.com')).toBe(true);
     });
 
     it('should handle unicode usernames', () => {
-      const statusData = new StatusData('用户', '2023-06-15T12:00:00Z'); // 2 hours ago
+      const statusData = new StatusData('用户', '2023-06-15T12:00:00Z', 60); // 2 hours ago with 60 min session
 
       // Exact unicode match
       expect(statusData.canAccess('用户')).toBe(true);
 
       // Different unicode user with expired session
-      expect(statusData.canAccess('测试', 60)).toBe(true);
+      expect(statusData.canAccess('测试')).toBe(true);
     });
 
     it('should be consistent with toObject data', () => {
-      const statusData = new StatusData('test-user', '2023-06-15T12:00:00Z');
+      const sessionMinutes = 60;
+      const statusData = new StatusData('test-user', '2023-06-15T12:00:00Z', sessionMinutes);
       const objectData = statusData.toObject();
 
       // Simulate canAccess logic using toObject data
-      const sessionMinutes = 60;
       const sessionExpiryTime = new Date(new Date(objectData.accessedAt).getTime() + sessionMinutes * 60 * 1000);
       const now = new Date('2023-06-15T14:00:00Z');
       const expected = sessionExpiryTime < now;
 
-      const result = statusData.canAccess('different-user', sessionMinutes);
+      const result = statusData.canAccess('different-user');
 
       expect(result).toBe(expected);
     });

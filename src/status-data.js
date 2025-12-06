@@ -7,9 +7,9 @@ class StatusData {
     this.sessionMinutes = typeof sessionMinutes == 'number' ? Math.max(0, Math.round(sessionMinutes)) : DEFAULT_SESSION_MINUTES;
   }
 
-  canAccess(username, sessionMinutes = this.sessionMinutes) {
+  canAccess(username) {
     if (username === this.username) return true;
-    const expiryEpoch = this.accessedAt.getTime() + sessionMinutes * 60 * 1000;
+    const expiryEpoch = this.accessedAt.getTime() + this.sessionMinutes * 60 * 1000;
     const nowEpoch    = new Date().getTime();
     return expiryEpoch < nowEpoch;
   }
