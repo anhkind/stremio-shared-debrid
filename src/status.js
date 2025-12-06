@@ -19,9 +19,9 @@ class Status {
     return this.data;
   }
 
-  async update(username = undefined) {
+  async update(username = undefined, sessionMinutes = undefined) {
     if (username) this.data.username = username;
-    this.data.accessNow();
+    this.data.accessFor(sessionMinutes);
     try {
       const json = JSON.stringify(this.data, null, 2);
       return await this.gist.updateContent(this.fileName, json);
