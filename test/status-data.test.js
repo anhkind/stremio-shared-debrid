@@ -8,13 +8,13 @@ describe('StatusData Class', () => {
   });
 
   describe('Constructor', () => {
-    it('should initialize with username and default accessedAt when only username provided', () => {
+    it('should initialize with username when only username provided', () => {
       const username = 'test-user';
       statusData = new StatusData({username});
 
       expect(statusData.username).toBe(username);
-      expect(statusData.accessedAt).toBeInstanceOf(Date);
-      expect(statusData.accessedAt.toISOString()).toBe(new Date('1970-01-01').toISOString());
+      expect(statusData.endedAt).toBeInstanceOf(Date);
+      expect(statusData.endedAt.toISOString()).toBe(new Date('1970-01-01').toISOString());
     });
 
     it('should initialize with username and provided accessedAt when both parameters provided', () => {
@@ -23,8 +23,10 @@ describe('StatusData Class', () => {
       statusData = new StatusData({username, accessedAt});
 
       expect(statusData.username).toBe(username);
-      expect(statusData.accessedAt).toBeInstanceOf(Date);
-      expect(statusData.accessedAt.toISOString()).toBe(new Date(accessedAt).toISOString());
+      expect(statusData.endedAt).toBeInstanceOf(Date);
+      // endedAt should be accessedAt + 180 minutes (DEFAULT_SESSION_MINUTES)
+      const expectedEndedAt = new Date(accessedAt).getTime() + 180 * 60 * 1000;
+      expect(statusData.endedAt.getTime()).toBe(expectedEndedAt);
     });
 
     it('should initialize with username and undefined accessedAt', () => {
@@ -32,9 +34,9 @@ describe('StatusData Class', () => {
       statusData = new StatusData({username, accessedAt: undefined});
 
       expect(statusData.username).toBe(username);
-      // undefined will use the default date
-      expect(statusData.accessedAt).toBeInstanceOf(Date);
-      expect(statusData.accessedAt.toISOString()).toBe(new Date('1970-01-01').toISOString());
+      // undefined accessedAt will use endedAt with default date
+      expect(statusData.endedAt).toBeInstanceOf(Date);
+      expect(statusData.endedAt.toISOString()).toBe(new Date('1970-01-01').toISOString());
     });
 
     it('should handle various date formats for accessedAt', () => {
@@ -43,10 +45,13 @@ describe('StatusData Class', () => {
       statusData = new StatusData({username, accessedAt: testDate});
 
       expect(statusData.username).toBe(username);
-      expect(statusData.accessedAt).toBeInstanceOf(Date);
-      expect(statusData.accessedAt.getFullYear()).toBe(2023);
-      expect(statusData.accessedAt.getMonth()).toBe(11); // December is 11
-      expect(statusData.accessedAt.getDate()).toBe(25);
+      expect(statusData.endedAt).toBeInstanceOf(Date);
+      // endedAt should be testDate + 180 minutes
+      const expectedDate = new Date(testDate);
+      expectedDate.setMinutes(expectedDate.getMinutes() + 180);
+      expect(statusData.endedAt.getFullYear()).toBe(2023);
+      expect(statusData.endedAt.getMonth()).toBe(11); // December is 11
+      expect(statusData.endedAt.getDate()).toBe(25);
     });
 
     it('should use default username when not provided', () => {
@@ -74,7 +79,8 @@ describe('StatusData Class', () => {
       statusData = new StatusData({username});
 
       expect(statusData.username).toBe(username);
-      expect(statusData.accessedAt).toBeInstanceOf(Date);
+      expect(statusData.endedAt).toBeInstanceOf(Date);
+      expect(statusData.endedAt.toISOString()).toBe('1970-01-01T00:00:00.000Z');
     });
 
     it('should handle boolean username (even though not typical)', () => {
@@ -82,13 +88,8 @@ describe('StatusData Class', () => {
       statusData = new StatusData({username});
 
       expect(statusData.username).toBe(username);
-      expect(statusData.accessedAt).toBeInstanceOf(Date);
-    });
-
-    // sessionMinutes validation tests
-    it('should use default sessionMinutes when not provided', () => {
-      const statusData = new StatusData({username: 'test-user'});
-      expect(statusData.sessionMinutes).toBe(180);
+      expect(statusData.endedAt).toBeInstanceOf(Date);
+      expect(statusData.endedAt.toISOString()).toBe('1970-01-01T00:00:00.000Z');
     });
 
     it('should handle endedAt parameter', () => {
@@ -113,56 +114,6 @@ describe('StatusData Class', () => {
       // This seems to be a bug in the implementation - endedAt should be used when provided
       expect(statusData.endedAt.toISOString()).toBe('2024-01-01T13:00:00.000Z'); // 10:00 + 180 minutes
     });
-
-    it('should accept positive integer sessionMinutes', () => {
-      const statusData = new StatusData({username: 'test-user', accessedAt: '2023-01-01', sessionMinutes: 120});
-      expect(statusData.sessionMinutes).toBe(120);
-    });
-
-    it('should round down fractional sessionMinutes', () => {
-      const statusData = new StatusData({username: 'test-user', accessedAt: '2023-01-01', sessionMinutes: 120.7});
-      expect(statusData.sessionMinutes).toBe(121); // Math.round(120.7) = 121
-    });
-
-    it('should round up fractional sessionMinutes', () => {
-      const statusData = new StatusData({username: 'test-user', accessedAt: '2023-01-01', sessionMinutes: 120.3});
-      expect(statusData.sessionMinutes).toBe(120); // Math.round(120.3) = 120
-    });
-
-    it('should clamp negative sessionMinutes to 0', () => {
-      const statusData = new StatusData({username: 'test-user', accessedAt: '2023-01-01', sessionMinutes: -10});
-      expect(statusData.sessionMinutes).toBe(0);
-    });
-
-    it('should use default sessionMinutes for non-numeric values', () => {
-      const statusData = new StatusData({username: 'test-user', accessedAt: '2023-01-01', sessionMinutes: 'invalid'});
-      expect(statusData.sessionMinutes).toBe(180);
-    });
-
-    it('should use default sessionMinutes for undefined', () => {
-      const statusData = new StatusData({username: 'test-user', accessedAt: '2023-01-01', sessionMinutes: undefined});
-      expect(statusData.sessionMinutes).toBe(180);
-    });
-
-    it('should handle 0 sessionMinutes', () => {
-      const statusData = new StatusData({username: 'test-user', accessedAt: '2023-01-01', sessionMinutes: 0});
-      expect(statusData.sessionMinutes).toBe(0);
-    });
-
-    it('should handle very large sessionMinutes', () => {
-      const statusData = new StatusData({username: 'test-user', accessedAt: '2023-01-01', sessionMinutes: 10000});
-      expect(statusData.sessionMinutes).toBe(10000);
-    });
-
-    it('should handle float sessionMinutes', () => {
-      const statusData = new StatusData({username: 'test-user', accessedAt: '2023-01-01', sessionMinutes: 90.5});
-      expect(statusData.sessionMinutes).toBe(91); // Math.round(90.5) = 91 (rounds half up)
-    });
-
-    it('should handle string numeric sessionMinutes', () => {
-      const statusData = new StatusData({username: 'test-user', accessedAt: '2023-01-01', sessionMinutes: '120'});
-      expect(statusData.sessionMinutes).toBe(180); // '120' is typeof string, not number
-    });
   });
 
   describe('toObject method', () => {
@@ -170,15 +121,12 @@ describe('StatusData Class', () => {
       statusData = new StatusData({username: 'test-user', accessedAt: '2023-01-15T10:30:00Z'});
     });
 
-    it('should return object with username, endedAt, and accessedAt as ISO string', () => {
+    it('should return object with username and endedAt as ISO string', () => {
       const result = statusData.toObject();
 
       expect(result).toHaveProperty('username', 'test-user');
       expect(result).toHaveProperty('endedAt');
-      expect(result).toHaveProperty('accessedAt');
       expect(typeof result.endedAt).toBe('string');
-      expect(typeof result.accessedAt).toBe('string');
-      expect(result.accessedAt).toBe('2023-01-15T10:30:00.000Z');
       // endedAt should be accessedAt + 180 minutes
       const expectedEndedAt = new Date('2023-01-15T10:30:00Z').getTime() + 180 * 60 * 1000;
       expect(new Date(result.endedAt).getTime()).toBe(expectedEndedAt);
@@ -189,27 +137,22 @@ describe('StatusData Class', () => {
 
       // Modify the returned object
       result.username = 'modified';
-      result.accessedAt = 'modified';
       result.endedAt = 'modified';
 
       // Original should be unchanged
       expect(statusData.username).toBe('test-user');
-      expect(statusData.accessedAt).toBeInstanceOf(Date);
       expect(statusData.endedAt).toBeInstanceOf(Date);
     });
 
     
-    it('should work with default accessedAt date', () => {
+    it('should work with default date', () => {
       const defaultStatusData = new StatusData({username: 'default-user'});
       const result = defaultStatusData.toObject();
 
       expect(result.username).toBe('default-user');
-      // accessedAt is optional and might be undefined
-      if (result.accessedAt) {
-        expect(result.accessedAt).toBe('1970-01-01T00:00:00.000Z');
-      }
       expect(result.endedAt).toBeDefined();
       expect(typeof result.endedAt).toBe('string');
+      expect(result.endedAt).toBe('1970-01-01T00:00:00.000Z');
     });
 
     it('should handle special characters in username', () => {
@@ -217,7 +160,7 @@ describe('StatusData Class', () => {
       const result = specialUser.toObject();
 
       expect(result.username).toBe('user@domain.com');
-      expect(typeof result.accessedAt).toBe('string');
+      expect(typeof result.endedAt).toBe('string');
     });
 
     it('should handle unicode characters in username', () => {
@@ -225,7 +168,7 @@ describe('StatusData Class', () => {
       const result = unicodeUser.toObject();
 
       expect(result.username).toBe('用户测试');
-      expect(typeof result.accessedAt).toBe('string');
+      expect(typeof result.endedAt).toBe('string');
     });
   });
 
@@ -439,8 +382,7 @@ describe('StatusData Class', () => {
       // endedAt will be calculated as 10:00 + 180 minutes = 13:00
       const statusData = new StatusData({
         username: 'original-user',
-        accessedAt: '2024-01-01T10:00:00Z',
-        sessionMinutes: 30 // This is ignored in the current implementation
+        accessedAt: '2024-01-01T10:00:00Z'
       });
 
       // Check access at 11:00 (2 hours before endedAt)
@@ -493,8 +435,7 @@ describe('StatusData Class', () => {
     it('should handle numeric usernames', () => {
       const statusData = new StatusData({
         username: 123,
-        accessedAt: '2024-01-01T10:00:00Z',
-        sessionMinutes: 60 // ignored, uses DEFAULT_SESSION_MINUTES
+        accessedAt: '2024-01-01T10:00:00Z'
       });
 
       // Same numeric username (always returns true regardless of timestamp)
@@ -507,8 +448,7 @@ describe('StatusData Class', () => {
     it('should handle boolean usernames', () => {
       const statusData = new StatusData({
         username: true,
-        accessedAt: '2024-01-01T10:00:00Z',
-        sessionMinutes: 60 // ignored, uses DEFAULT_SESSION_MINUTES
+        accessedAt: '2024-01-01T10:00:00Z'
       });
 
       // Same boolean username (always returns true regardless of timestamp)
@@ -523,8 +463,7 @@ describe('StatusData Class', () => {
       // sessionMinutes is ignored, endedAt is calculated using DEFAULT_SESSION_MINUTES
       const statusData = new StatusData({
         username: 'original-user',
-        accessedAt: '2024-01-01T10:00:00Z',
-        sessionMinutes: 0 // ignored, uses DEFAULT_SESSION_MINUTES
+        accessedAt: '2024-01-01T10:00:00Z'
       });
 
       // endedAt will be 10:00 + 180 minutes = 13:00
@@ -537,8 +476,7 @@ describe('StatusData Class', () => {
       // sessionMinutes is ignored, endedAt is calculated using DEFAULT_SESSION_MINUTES
       const statusData = new StatusData({
         username: 'original-user',
-        accessedAt: '2024-01-01T10:00:00Z',
-        sessionMinutes: -10 // ignored, uses DEFAULT_SESSION_MINUTES
+        accessedAt: '2024-01-01T10:00:00Z'
       });
 
       // endedAt will be 10:00 + 180 minutes = 13:00
@@ -551,8 +489,7 @@ describe('StatusData Class', () => {
       // sessionMinutes is ignored, endedAt is calculated using DEFAULT_SESSION_MINUTES
       const statusData = new StatusData({
         username: 'original-user',
-        accessedAt: '2024-01-01T10:00:00Z',
-        sessionMinutes: 0.5 // ignored, uses DEFAULT_SESSION_MINUTES
+        accessedAt: '2024-01-01T10:00:00Z'
       });
 
       // endedAt will be 10:00 + 180 minutes = 13:00
@@ -581,8 +518,7 @@ describe('StatusData Class', () => {
     it('should handle usernames with special characters', () => {
       const statusData = new StatusData({
         username: 'user@domain.com',
-        accessedAt: '2024-01-01T10:00:00Z',
-        sessionMinutes: 60 // ignored, uses DEFAULT_SESSION_MINUTES
+        accessedAt: '2024-01-01T10:00:00Z'
       });
 
       // Exact match (always returns true)
@@ -595,8 +531,7 @@ describe('StatusData Class', () => {
     it('should handle unicode usernames', () => {
       const statusData = new StatusData({
         username: '用户',
-        accessedAt: '2024-01-01T10:00:00Z',
-        sessionMinutes: 60 // ignored, uses DEFAULT_SESSION_MINUTES
+        accessedAt: '2024-01-01T10:00:00Z'
       });
 
       // Exact unicode match (always returns true)
@@ -645,9 +580,9 @@ describe('StatusData Class', () => {
       const object = statusData.toObject();
       expect(object).toHaveProperty('username', 'lifecycle-user');
       expect(object).toHaveProperty('endedAt');
-      expect(object).toHaveProperty('accessedAt');
       expect(typeof object.endedAt).toBe('string');
-      expect(typeof object.accessedAt).toBe('string');
+      // should NOT have accessedAt property
+      expect(object).not.toHaveProperty('accessedAt');
     });
   });
 });
