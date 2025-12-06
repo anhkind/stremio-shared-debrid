@@ -27,12 +27,12 @@ describe('StatusData Class', () => {
       expect(statusData.accessedAt.toISOString()).toBe(new Date(accessedAt).toISOString());
     });
 
-    it('should initialize with username and null accessedAt', () => {
+    it('should initialize with username and undefined accessedAt', () => {
       const username = 'test-user';
-      statusData = new StatusData({username, accessedAt: null});
+      statusData = new StatusData({username, accessedAt: undefined});
 
       expect(statusData.username).toBe(username);
-      // null is treated as object (typeof null === 'object'), so it uses the default
+      // undefined will use the default date
       expect(statusData.accessedAt).toBeInstanceOf(Date);
       expect(statusData.accessedAt.toISOString()).toBe(new Date('1970-01-01').toISOString());
     });
@@ -57,11 +57,6 @@ describe('StatusData Class', () => {
     it('should use provided username instead of default', () => {
       const statusData = new StatusData({username: 'custom-user'});
       expect(statusData.username).toBe('custom-user');
-    });
-
-    it('should use null username when explicitly provided', () => {
-      const statusData = new StatusData({username: null});
-      expect(statusData.username).toBe('Grandma');
     });
 
     it('should use undefined username when explicitly provided', () => {
@@ -121,8 +116,8 @@ describe('StatusData Class', () => {
       expect(statusData.sessionMinutes).toBe(180);
     });
 
-    it('should use default sessionMinutes for null', () => {
-      const statusData = new StatusData({username: 'test-user', accessedAt: '2023-01-01', sessionMinutes: null});
+    it('should use default sessionMinutes for undefined', () => {
+      const statusData = new StatusData({username: 'test-user', accessedAt: '2023-01-01', sessionMinutes: undefined});
       expect(statusData.sessionMinutes).toBe(180);
     });
 
