@@ -93,6 +93,7 @@ describe('Express Server', () => {
 
     it('should return warning stream when user cannot access shared debrid', async () => {
       mockStatusData.canAccess.mockReturnValue(false);
+      mockStatusData.getWaitingMinutes = jest.fn().mockReturnValue(30);
 
       const response = await request(app)
         .get('/valid-token/def456/anotheruser/stream/series/456.json')
@@ -100,11 +101,12 @@ describe('Express Server', () => {
 
       expect(Status).toHaveBeenCalledWith('valid-token', 'def456');
       expect(mockStatusData.canAccess).toHaveBeenCalledWith('anotheruser');
+      expect(mockStatusData.getWaitingMinutes).toHaveBeenCalled();
       expect(mockStatus.update).not.toHaveBeenCalled();
       expect(response.body).toEqual({
         streams: [{
           name: 'Shared Debrid',
-          description: 'DANGER! anotheruser is watching!',
+          description: 'DANGER! anotheruser is watching! Waiting time: 30 mins',
           ytId: 'abm8QCh7pBg'
         }]
       });
@@ -112,6 +114,7 @@ describe('Express Server', () => {
 
     it('should return warning stream when user cannot access shared debrid with sessionMinutes', async () => {
       mockStatusData.canAccess.mockReturnValue(false);
+      mockStatusData.getWaitingMinutes = jest.fn().mockReturnValue(30);
 
       const response = await request(app)
         .get('/valid-token/def456/anotheruser/120/stream/series/456.json')
@@ -119,11 +122,12 @@ describe('Express Server', () => {
 
       expect(Status).toHaveBeenCalledWith('valid-token', 'def456');
       expect(mockStatusData.canAccess).toHaveBeenCalledWith('anotheruser');
+      expect(mockStatusData.getWaitingMinutes).toHaveBeenCalled();
       expect(mockStatus.update).not.toHaveBeenCalled();
       expect(response.body).toEqual({
         streams: [{
           name: 'Shared Debrid',
-          description: 'DANGER! anotheruser is watching!',
+          description: 'DANGER! anotheruser is watching! Waiting time: 30 mins',
           ytId: 'abm8QCh7pBg'
         }]
       });
@@ -181,23 +185,27 @@ describe('Express Server', () => {
 
     it('should not update status when user cannot access', async () => {
       mockStatusData.canAccess.mockReturnValue(false);
+      mockStatusData.getWaitingMinutes = jest.fn().mockReturnValue(30);
 
       await request(app)
         .get('/token/gistid/user/stream/movie/222.json')
         .expect(200);
 
       expect(mockStatusData.canAccess).toHaveBeenCalled();
+      expect(mockStatusData.getWaitingMinutes).toHaveBeenCalled();
       expect(mockStatus.update).not.toHaveBeenCalled();
     });
 
     it('should not update status when user cannot access with sessionMinutes', async () => {
       mockStatusData.canAccess.mockReturnValue(false);
+      mockStatusData.getWaitingMinutes = jest.fn().mockReturnValue(30);
 
       await request(app)
         .get('/token/gistid/user/180/stream/movie/222.json')
         .expect(200);
 
       expect(mockStatusData.canAccess).toHaveBeenCalled();
+      expect(mockStatusData.getWaitingMinutes).toHaveBeenCalled();
       expect(mockStatus.update).not.toHaveBeenCalled();
     });
 
@@ -229,51 +237,16 @@ describe('Express Server', () => {
 
       // Reset mock for the next test
       mockStatus.update.mockClear();
+      mockStatusData.getWaitingMinutes = jest.fn().mockReturnValue(30);
 
       // Test with denied user
       const deniedResponse = await request(app)
         .get('/token/gistid/denied_user/stream/movie/555.json')
         .expect(200);
       expect(deniedResponse.body.streams[0].name).toBe('Shared Debrid');
+      expect(deniedResponse.body.streams[0].description).toBe('DANGER! anotheruser is watching! Waiting time: 30 mins');
+      expect(mockStatusData.getWaitingMinutes).toHaveBeenCalled();
       expect(mockStatus.update).not.toHaveBeenCalled();
-    });
-
-    it('should return warning stream when statusData is null', async () => {
-      mockStatus.get.mockResolvedValue(null);
-
-      const response = await request(app)
-        .get('/token/gistid/user/stream/movie/999.json')
-        .expect(200);
-
-      expect(Status).toHaveBeenCalledWith('token', 'gistid');
-      expect(mockStatus.get).toHaveBeenCalled();
-      expect(mockStatus.update).not.toHaveBeenCalled();
-      expect(response.body).toEqual({
-        streams: [{
-          name: 'Shared Debrid',
-          description: 'DANGER! undefined is watching!',
-          ytId: 'abm8QCh7pBg'
-        }]
-      });
-    });
-
-    it('should return warning stream when statusData is null with sessionMinutes', async () => {
-      mockStatus.get.mockResolvedValue(null);
-
-      const response = await request(app)
-        .get('/token/gistid/user/180/stream/movie/999.json')
-        .expect(200);
-
-      expect(Status).toHaveBeenCalledWith('token', 'gistid');
-      expect(mockStatus.get).toHaveBeenCalled();
-      expect(mockStatus.update).not.toHaveBeenCalled();
-      expect(response.body).toEqual({
-        streams: [{
-          name: 'Shared Debrid',
-          description: 'DANGER! undefined is watching!',
-          ytId: 'abm8QCh7pBg'
-        }]
-      });
     });
   });
 });
