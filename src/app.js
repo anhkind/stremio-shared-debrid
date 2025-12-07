@@ -18,6 +18,10 @@ app.get('/', (req, res) => {
   res.redirect('/configure');
 });
 
+app.get('/:authToken/:gistId/:username{/:sessionMinutes}/configure', (req, res) => {
+  res.redirect('/configure');
+});
+
 // Configuration route
 app.get('/configure', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'web', 'configure', 'index.html'));
