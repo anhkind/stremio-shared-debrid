@@ -30,7 +30,7 @@ Actually can be anything just to identify you from others.
 ### FAQ
 
 #### _Why Gist?_
-We need a place to store the estimated ended time of the last user for the shares debrid. With Gist,
+We need a place to store the estimated ended time of the last user for the shared debrid. With Gist,
 we have it free and the Github Rest API is simple to use.
 
 We will have this data under `shared-debrid.json` file of the gist like this:
